@@ -4,10 +4,45 @@
     <meta charset="UTF-8">
     {% load static %}
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .card {
+            margin-bottom: 10px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+        }
+        .text-success {
+            color: #28a745;
+        }
+        .text-danger {
+            color: #dc3545;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+        }
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background-color: #0069d9;
+            color: #fff;
+        }
+        .btn-link {
+            color: #007bff;
+            text-decoration: none;
+            background-color: transparent;
+            border: none;
+        }
+        .btn-link:hover,
+        .btn-link:focus {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
 
- <nav class="navbar navbar-light bg-light">
+<nav class="navbar navbar-light bg-light">
     <div class="container-fluid">
         <div class="navbar-header">
               <a class="navbar-brand" href="{% url 'onlinecourse:index' %}">Home</a>
@@ -23,8 +58,8 @@
                 <form class="form-inline" action="{% url 'onlinecourse:login' %}" method="post">
                     {% csrf_token %}
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Username" name="username" >
-                        <input type="password" class="form-control" placeholder="Username" name="psw" >
+                        <input type="text" class="form-control" placeholder="Username" name="username">
+                        <input type="password" class="form-control" placeholder="Username" name="psw">
                         <button class="btn btn-primary" type="submit">Login</button>
                         <a class="btn btn-link" href="{% url 'onlinecourse:registration' %}">Sign Up</a>
                     </div>
@@ -38,18 +73,34 @@
 <div class="container-fluid">
     {% if grade > 80 %}
     <div class="alert alert-success">
-       <!--HINT Display passed info -->
+        <strong>Congratulations!</strong> You passed the exam with a final score of {{ grade }}.
     </div>
-        {% else %}
-        <div class="alert alert-danger">
-            <!--HINT Display failed info -->
-        </div>
-        <a class="btn btn-link text-danger" href="{% url 'onlinecourse:course_details' course.id %}">Re-test</a>
-        {% endif %}
-        <div class="card-columns-vertical mt-1">
-        <h5 class="">Exam results</h5>
-            <!--HINT Display exam results-->
-        </div>
+    {% else %}
+    <div class="alert alert-danger">
+        <strong>Unfortunately, you failed the exam.</strong> Your final score is {{ grade }}.
     </div>
+    <a class="btn btn-link text-danger" href="{% url 'onlinecourse:course_details' course.id %}">Re-take the Exam</a>
+    {% endif %}
+    <div class="card-columns mt-3">
+        <h5 class="">Exam Results</h5>
+        {% for result in question_results %}
+        <div class="card">
+            <div class="card-header">
+                <h5>Question {{ forloop.counter }}:</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ result.question.question_text }}</p>
+                {% if result.is_correct %}
+                <p class="text-success">Your answer was correct.</p>
+                {% else %}
+                <p class="text-danger">Your answer was incorrect.</p>
+                <p>Correct answer: {{ result.question.correct_choice.choice_text }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
 </body>
 </html>

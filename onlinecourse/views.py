@@ -8,9 +8,15 @@ from django.urls import reverse
 from django.views import generic
 from django.contrib.auth import login, logout, authenticate
 import logging
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Course, Enrollment, Question, Choice, Submission
+
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 # Create your views here.
+
 
 
 def registration_request(request):
@@ -102,6 +108,52 @@ def enroll(request, course_id):
 
     return HttpResponseRedirect(reverse(viewname='onlinecourse:course_details', args=(course.id,)))
 
+@login_required
+def submit(request, course_id):
+    user = request.user
+    course = Course.objects.get(id=course_id)
+    enrollment = Enrollment.objects.get(user=user, course=course)
+    submission = Submission.objects.create(enrollment=enrollment)
+
+    selected_choices = []
+    for key, value in request.POST.items():
+        if key.startswith('choice_'):
+            choice_id = int(value)
+            choice = Choice.objects.get(id=choice_id)
+            selected_choices.append(choice)
+    
+    submission.choices.set(selected_choices)
+    
+    return redirect('show_exam_result', submission.id)
+
+def show_exam_result(request, course_id, submission_id):
+    course = Course.objects.get(id=course_id)
+    submission = Submission.objects.get(id=submission_id)
+
+    selected_choice_ids = submission.choices.values_list('id', flat=True)
+
+    question_results = []
+    total_score = 0
+
+    for question in course.question_set.all():
+        is_correct = question.choices.filter(id__in=selected_choice_ids, is_correct=True).exists()
+
+        if is_correct:
+            grade = question.grade
+            total_score += grade
+        else:
+            grade = 0
+
+        question_results.append({'question': question, 'is_correct': is_correct, 'grade': grade})
+
+    context = {
+        'course': course,
+        'selected_choice_ids': selected_choice_ids,
+        'total_score': total_score,
+        'question_results': question_results
+    }
+
+    return render(request, 'onlinecourse/exam_result.html', context)
 
 # <HINT> Create a submit view to create an exam submission record for a course enrollment,
 # you may implement it based on following logic:
